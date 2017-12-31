@@ -14,6 +14,17 @@ def findRowFormByAction(formlist, action):
         form += 1
         
     return form
+
+def findRowFormByID(formlist, id):
+    form = 0
+    for f in formlist:
+        if f.attrs.get("id") == id:
+            return form
+        form += 1
+    
+    return -1
+
+
     
 def validateIpAddr(ipstring):
     parts = ipstring.split('.')
@@ -44,26 +55,32 @@ def findSubdomain(subdomain, dnsrecords):
 def getExternalIP():
     "http://checkip.dyndns.org/"
     site = urlopen("http://checkip.dyndns.org/").read()
-    grab = re.findall('\d{2,3}.\d{2,3}.\d{2,3}.\d{2,3}', site)
+
+    # print(site)
+    # grab = re.findall('\d{2,3}.\d{2,3}.\d{2,3}.\d{2,3}', site)
+    grab = re.findall('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', site)
+    
     address = grab[0]
     return address
             
 def updateDnsRecords(username, password, domain, hosts, ipaddr):
     # Validate IP
-    validateIpAddr(ipaddr)    
+    validateIpAddr(ipaddr)
     
     # Create browser instance
     br = mechanize.Browser()
     br.set_handle_robots(False)
     br.open("https://www.123-reg.co.uk/public/login")
 
-    fid = findRowFormByAction(br.forms(), "/public/login")
-        
+    #fid = findRowFormByAction(br.forms(), "/public/login")     
+    fid = findRowFormByID(br.forms(), "login_form")
+   
     br.select_form(nr=fid)
     br.form['username'] = username
     br.form['password'] = password
     br.submit()
-    
+
+
     # Here we switch to the 123-reg JSON interface
     # Get list of current DNS records
     response = br.open("https://www.123-reg.co.uk/secure/cpanel/manage-dns/get_dns?domain="+domain)
@@ -119,7 +136,7 @@ if __name__ == '__main__':
         # Check lastip to current
         external_ip = getExternalIP()
         if external_ip != last_ip:
-            printMessage('New IP address! Updating...')
+            printMessage('New IP address! ('+external_ip+') Updating...')
             updateDnsRecords(username, password, domain, subdoms, external_ip)
             
             # Update cache
